@@ -1,0 +1,41 @@
+# --- Python: caches & builds ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.wheels/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.cache/
+
+# --- Environnements virtuels ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- VCS / IDE ---
+.git/
+.vscode/
+
+# --- Données locales & exports (ne pas baker) ---
+data/
+exports/
+logs_csv/
+
+# --- Données MySQL du host (on utilisera un volume Docker) ---
+bdd/db/
+
+# --- Fichiers d'environnement (passés via env/secrets au runtime) ---
+.env
+.env.*
+
+# --- Divers ---
+*.log
+.DS_Store
