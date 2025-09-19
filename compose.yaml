@@ -34,5 +34,13 @@ services:
       DB_PORT: "3306"
     command: ["tail","-f","/dev/null"]
 
+  grafana: # nom du service
+    image: grafana/grafana:latest #image officielle de Grafana
+    ports: ["3000:3000"] # redirige le port 3000 du conteneur vers le port 3000 de ma machine (hôte)
+    environment:  # variables d'environnement qui configurent Grafana
+      GF_SECURITY_ADMIN_USER: admin # définit l'utilisateur admin
+      GF_SECURITY_ADMIN_PASSWORD: admin # Définit le mot de passe admin
+
 volumes:
-  db-data:
+    db-data:
+    grafana_data:
