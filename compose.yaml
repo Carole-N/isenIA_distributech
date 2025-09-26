@@ -16,7 +16,7 @@ services:
 
   adminer:
     image: adminer:latest
-    ports: ["8080:8080"]
+    ports: ["8081:8080"]
     environment:
       - ADMINER_DEFAULT_SERVER=db
     depends_on: [db]
@@ -41,6 +41,67 @@ services:
       GF_SECURITY_ADMIN_USER: admin # définit l'utilisateur admin
       GF_SECURITY_ADMIN_PASSWORD: admin # Définit le mot de passe admin
 
-volumes:
-    db-data:
-    grafana_data:
+  prometheus: 
+    image: prom/prometheus:latest # image officielle de Prometheus
+    ports: ["9090:9090"]  # expose le port 9090 pour accéder à l'interface web de Prometheus
+    volumes:  # monte le fichier de configuration et un volume pour les données
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro # montage en lecture seule du fichier de configuration
+      - prometheus_data:/prometheus # volume pour stocker les données de Prometheus
+
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:latest # image officielle de node-exporter
+    ports:
+      - "9100:9100" # expose le port 9100 pour accéder aux métriques
+    volumes: # monte les systèmes de fichiers nécessaires pour que node-exporter puisse collecter les métriques du système hôte
+      - /proc:/host/proc:ro # montage en lecture seule du système de fichiers /proc
+      - /sys:/host/sys:ro # montage en lecture seule du système de fichiers /sys
+      - /:/rootfs:ro  # montage en lecture seule du système de fichiers racine
+    command:
+      - --path.procfs=/host/proc  # indique à node-exporter où trouver /proc
+      - --path.sysfs=/host/sys  # indique à node-exporter où trouver /sys
+      - --path.rootfs=/rootfs # indique à node-exporter où trouver le système de fichiers racine
+    restart: unless-stopped  # redémarre le conteneur sauf s'il est arrêté manuellement
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.52.1
+    ports:
+      - "8082:8080"   # UI & /metrics (8082 côté machine pour éviter tout conflit)
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/snap/docker/common/var-lib-docker:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:2.9.8
+    command: -config.file=/etc/loki/loki-config.yaml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - loki_data:/loki
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:2.9.8
+    command: -config.file=/etc/promtail/promtail-config.yaml
+    volumes:
+      - ./monitoring/promtail-config.yaml:/etc/promtail/promtail-config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/snap/docker/common/var-lib-docker:/var/lib/docker:ro   # (Docker via snap)
+      - promtail_positions:/var/lib/promtail
+    restart: unless-stopped
+
+volumes:  # volumes pour la persistance des données
+    db-data:  # volume pour les données MySQL
+    grafana_data: # volume pour les données de Grafana
+    prometheus_data:  # volume pour les données de Prometheus
+    node_exporter_data: # volume pour les données de node-exporter
+    cadvisor_data: # volume pour les données de cAdvisor
+    loki_data: # volume pour les données de Loki
+    promtail_positions: # volume pour les positions de Promtail

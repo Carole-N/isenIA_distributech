@@ -78,19 +78,106 @@ CREATE TABLE IF NOT EXISTS stock (
     FOREIGN KEY (product_id) REFERENCES produit(product_id)
 );
 
--- INDEXES pour optimiser les requêtes
-CREATE INDEX idx_revendeur_region ON revendeur(region_id);
-CREATE INDEX idx_production_log ON production(log_id);
-CREATE INDEX idx_commande_log ON commande(log_id);
-CREATE INDEX idx_commande_revendeur ON commande(revendeur_id);
-CREATE INDEX idx_production_produit_pid ON production_produit(production_id);
-CREATE INDEX idx_production_produit_produit ON production_produit(product_id);
-CREATE INDEX idx_commande_produit_commande ON commande_produit(commande_id);
-CREATE INDEX idx_commande_produit_produit ON commande_produit(product_id);
-CREATE INDEX idx_stock_product ON stock(product_id);
-CREATE INDEX idx_production_date ON production(date_production);
-CREATE INDEX idx_commande_date ON commande(commande_date);
-CREATE INDEX idx_stock_date ON stock(stock_date);
+-- INDEXES pour optimiser les requêtes (idempotents via information_schema)
+
+-- revendeur(region_id)
+SET @sql := IF (
+  EXISTS (SELECT 1 FROM information_schema.statistics
+          WHERE table_schema = DATABASE() AND table_name='revendeur' AND index_name='idx_revendeur_region'),
+  'SELECT "idx_revendeur_region exists";',
+  'CREATE INDEX idx_revendeur_region ON revendeur(region_id);'
+); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- production(log_id)
+SET @sql := IF (
+  EXISTS (SELECT 1 FROM information_schema.statistics
+          WHERE table_schema = DATABASE() AND table_name='production' AND index_name='idx_production_log'),
+  'SELECT "idx_production_log exists";',
+  'CREATE INDEX idx_production_log ON production(log_id);'
+); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- commande(log_id)
+SET @sql := IF (
+  EXISTS (SELECT 1 FROM information_schema.statistics
+          WHERE table_schema = DATABASE() AND table_name='commande' AND index_name='idx_commande_log'),
+  'SELECT "idx_commande_log exists";',
+  'CREATE INDEX idx_commande_log ON commande(log_id);'
+); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- commande(revendeur_id)
+SET @sql := IF (
+  EXISTS (SELECT 1 FROM information_schema.statistics
+          WHERE table_schema = DATABASE() AND table_name='commande' AND index_name='idx_commande_revendeur'),
+  'SELECT "idx_commande_revendeur exists";',
+  'CREATE INDEX idx_commande_revendeur ON commande(revendeur_id);'
+); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- production_produit(production_id)
+SET @sql := IF (
+  EXISTS (SELECT 1 FROM information_schema.statistics
+          WHERE table_schema = DATABASE() AND table_name='production_produit' AND index_name='idx_production_produit_pid'),
+  'SELECT "idx_production_produit_pid exists";',
+  'CREATE INDEX idx_production_produit_pid ON production_produit(production_id);'
+); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- production_produit(product_id)
+SET @sql := IF (
+  EXISTS (SELECT 1 FROM information_schema.statistics
+          WHERE table_schema = DATABASE() AND table_name='production_produit' AND index_name='idx_production_produit_produit'),
+  'SELECT "idx_production_produit_produit exists";',
+  'CREATE INDEX idx_production_produit_produit ON production_produit(product_id);'
+); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- commande_produit(commande_id)
+SET @sql := IF (
+  EXISTS (SELECT 1 FROM information_schema.statistics
+          WHERE table_schema = DATABASE() AND table_name='commande_produit' AND index_name='idx_commande_produit_commande'),
+  'SELECT "idx_commande_produit_commande exists";',
+  'CREATE INDEX idx_commande_produit_commande ON commande_produit(commande_id);'
+); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- commande_produit(product_id)
+SET @sql := IF (
+  EXISTS (SELECT 1 FROM information_schema.statistics
+          WHERE table_schema = DATABASE() AND table_name='commande_produit' AND index_name='idx_commande_produit_produit'),
+  'SELECT "idx_commande_produit_produit exists";',
+  'CREATE INDEX idx_commande_produit_produit ON commande_produit(product_id);'
+); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- stock(product_id)
+SET @sql := IF (
+  EXISTS (SELECT 1 FROM information_schema.statistics
+          WHERE table_schema = DATABASE() AND table_name='stock' AND index_name='idx_stock_product'),
+  'SELECT "idx_stock_product exists";',
+  'CREATE INDEX idx_stock_product ON stock(product_id);'
+); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- production(date_production)
+SET @sql := IF (
+  EXISTS (SELECT 1 FROM information_schema.statistics
+          WHERE table_schema = DATABASE() AND table_name='production' AND index_name='idx_production_date'),
+  'SELECT "idx_production_date exists";',
+  'CREATE INDEX idx_production_date ON production(date_production);'
+); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- commande(commande_date)
+SET @sql := IF (
+  EXISTS (SELECT 1 FROM information_schema.statistics
+          WHERE table_schema = DATABASE() AND table_name='commande' AND index_name='idx_commande_date'),
+  'SELECT "idx_commande_date exists";',
+  'CREATE INDEX idx_commande_date ON commande(commande_date);'
+); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- stock(stock_date)
+SET @sql := IF (
+  EXISTS (SELECT 1 FROM information_schema.statistics
+          WHERE table_schema = DATABASE() AND table_name='stock' AND index_name='idx_stock_date'),
+  'SELECT "idx_stock_date exists";',
+  'CREATE INDEX idx_stock_date ON stock(stock_date);'
+); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+
+
 
 -- VERIFICATION que les tables de base existent
 SELECT table_name 
@@ -98,7 +185,7 @@ FROM information_schema.tables
 WHERE table_schema = 'distributech'
   AND table_name IN ('stock', 'produit', 'revendeur', 'region');
 
----- CREATION VIEW : une vue du stock final par produit et une vue du stock final par revendeur
+-- CREATION VIEW : une vue du stock final par produit et une vue du stock final par revendeur
 -- Une vue du stock final par produit
 
 CREATE OR REPLACE VIEW vue_stock_final_produit AS
